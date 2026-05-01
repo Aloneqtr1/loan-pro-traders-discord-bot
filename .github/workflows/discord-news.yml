@@ -2,67 +2,67 @@ name: Daily Forex and Gold News to Discord
 
 on:
   schedule:
-      - cron: '0 8 * * 1-5'
-          - cron: '0 13 * * 1-5'
-            workflow_dispatch:
+    - cron: '0 8 * * 1-5'
+    - cron: '0 13 * * 1-5'
+  workflow_dispatch:
 
-            jobs:
-              post-discord-news:
-                  runs-on: ubuntu-latest
-                      steps:
-                            - name: Post Daily Forex and Gold Update to Discord
-                                    env:
-                                              FOREX_NEWS_WEBHOOK: ${{ secrets.FOREX_NEWS_WEBHOOK }}
-                                                        MARKET_UPDATES_WEBHOOK: ${{ secrets.MARKET_UPDATES_WEBHOOK }}
-                                                                run: |
-                                                                          python3 << 'EOF'
-                                                                                    import urllib.request, json, datetime, os
+jobs:
+  post-discord-news:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post Daily Forex and Gold Update to Discord
+        env:
+          FOREX_NEWS_WEBHOOK: ${{ secrets.FOREX_NEWS_WEBHOOK }}
+          MARKET_UPDATES_WEBHOOK: ${{ secrets.MARKET_UPDATES_WEBHOOK }}
+        run: |
+          python3 << 'EOF'
+          import urllib.request, json, datetime, os
 
-                                                                                              with urllib.request.urlopen("https://open.er-api.com/v6/latest/USD") as r:
-                                                                                                            rates = json.loads(r.read())["rates"]
-                                                                                                            
-                                                                                                                      now = datetime.datetime.utcnow()
-                                                                                                                                today = now.strftime("%A, %B %d %Y")
-                                                                                                                                          time_str = now.strftime("%H:%M UTC")
-                                                                                                                                                    eurusd = round(1/rates["EUR"], 5)
-                                                                                                                                                              gbpusd = round(1/rates["GBP"], 5)
-                                                                                                                                                                        usdjpy = round(rates["JPY"], 3)
-                                                                                                                                                                                  usdchf = round(rates["CHF"], 5)
-                                                                                                                                                                                            usdcad = round(rates["CAD"], 5)
-                                                                                                                                                                                                      audusd = round(1/rates["AUD"], 5)
-                                                                                                                                                                                                      
-                                                                                                                                                                                                                forex_msg = (
-                                                                                                                                                                                                                              f"**LIVE FOREX UPDATE** | {today} | {time_str}\n\n"
-                                                                                                                                                                                                                                            f"**Major Pairs (Live):**\n"
-                                                                                                                                                                                                                                                          f"EUR/USD: **{eurusd}** | GBP/USD: **{gbpusd}**\n"
-                                                                                                                                                                                                                                                                        f"USD/JPY: **{usdjpy}** | USD/CHF: **{usdchf}**\n"
-                                                                                                                                                                                                                                                                                      f"USD/CAD: **{usdcad}** | AUD/USD: **{audusd}**\n\n"
-                                                                                                                                                                                                                                                                                                    f"**Gold (XAUUSD):** Monitor via TradingView\n"
-                                                                                                                                                                                                                                                                                                                  f"Economic Calendar: https://www.forexfactory.com\n\n"
-                                                                                                                                                                                                                                                                                                                                f"*For educational purposes only. Trading involves risk.*"
-                                                                                                                                                                                                                                                                                                                                          )
-                                                                                                                                                                                                                                                                                                                                          
-                                                                                                                                                                                                                                                                                                                                                    market_msg = (
-                                                                                                                                                                                                                                                                                                                                                                  f"**DAILY MARKET SUMMARY** | {today} | {time_str}\n\n"
-                                                                                                                                                                                                                                                                                                                                                                                f"**XAUUSD Key Levels:**\n"
-                                                                                                                                                                                                                                                                                                                                                                                              f"Support: $3,150-3,200 | Resistance: $3,280-3,350\n\n"
-                                                                                                                                                                                                                                                                                                                                                                                                            f"**USD Strength (DXY proxy):**\n"
-                                                                                                                                                                                                                                                                                                                                                                                                                          f"EUR/USD: {eurusd} | GBP/USD: {gbpusd}\n"
-                                                                                                                                                                                                                                                                                                                                                                                                                                        f"USD/JPY: {usdjpy} | USD/CHF: {usdchf}\n\n"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                      f"DXY rising = bearish gold | DXY falling = bullish gold\n\n"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    f"*Educational only. Not financial advice.*"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                              )
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        def post(url, msg, name):
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      data = json.dumps({"username": name, "content": msg}).encode()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    req = urllib.request.Request(url, data=data,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        headers={"Content-Type": "application/json"})
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      with urllib.request.urlopen(req) as resp:
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        print(f"{name}: HTTP {resp.status}")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  fw = os.environ.get("FOREX_NEWS_WEBHOOK", "")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            mw = os.environ.get("MARKET_UPDATES_WEBHOOK", "")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      if fw: post(fw, forex_msg, "Forex News Bot")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if mw: post(mw, market_msg, "Market Updates Bot")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          print("Done.")
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    EOF
+          with urllib.request.urlopen("https://open.er-api.com/v6/latest/USD") as r:
+              rates = json.loads(r.read())["rates"]
+
+          now = datetime.datetime.utcnow()
+          today = now.strftime("%A, %B %d %Y")
+          time_str = now.strftime("%H:%M UTC")
+          eurusd = round(1/rates["EUR"], 5)
+          gbpusd = round(1/rates["GBP"], 5)
+          usdjpy = round(rates["JPY"], 3)
+          usdchf = round(rates["CHF"], 5)
+          usdcad = round(rates["CAD"], 5)
+          audusd = round(1/rates["AUD"], 5)
+
+          forex_msg = (
+              f"**LIVE FOREX UPDATE** | {today} | {time_str}\n\n"
+              f"**Major Pairs (Live):**\n"
+              f"EUR/USD: **{eurusd}** | GBP/USD: **{gbpusd}**\n"
+              f"USD/JPY: **{usdjpy}** | USD/CHF: **{usdchf}**\n"
+              f"USD/CAD: **{usdcad}** | AUD/USD: **{audusd}**\n\n"
+              f"**Gold (XAUUSD):** Monitor via TradingView\n"
+              f"Economic Calendar: https://www.forexfactory.com\n\n"
+              f"*For educational purposes only. Trading involves risk.*"
+          )
+
+          market_msg = (
+              f"**DAILY MARKET SUMMARY** | {today} | {time_str}\n\n"
+              f"**XAUUSD Key Levels:**\n"
+              f"Support: $3,150-3,200 | Resistance: $3,280-3,350\n\n"
+              f"**USD Strength (DXY proxy):**\n"
+              f"EUR/USD: {eurusd} | GBP/USD: {gbpusd}\n"
+              f"USD/JPY: {usdjpy} | USD/CHF: {usdchf}\n\n"
+              f"DXY rising = bearish gold | DXY falling = bullish gold\n\n"
+              f"*Educational only. Not financial advice.*"
+          )
+
+          def post(url, msg, name):
+              data = json.dumps({"username": name, "content": msg}).encode()
+              req = urllib.request.Request(url, data=data,
+                  headers={"Content-Type": "application/json"})
+              with urllib.request.urlopen(req) as resp:
+                  print(f"{name}: HTTP {resp.status}")
+
+          fw = os.environ.get("FOREX_NEWS_WEBHOOK", "")
+          mw = os.environ.get("MARKET_UPDATES_WEBHOOK", "")
+          if fw: post(fw, forex_msg, "Forex News Bot")
+          if mw: post(mw, market_msg, "Market Updates Bot")
+          print("Done.")
+          EOF
